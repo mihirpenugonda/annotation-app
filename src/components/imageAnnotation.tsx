@@ -1,15 +1,6 @@
 import React, { useState, useRef, useCallback } from "react";
-import { useAnnotation } from "../lib/context/annotationContext";
+import { Rectangle, useAnnotation } from "../lib/context/annotationContext";
 import { AnnotationMode } from "../lib/types";
-
-interface Rectangle {
-  x: number;
-  y: number;
-  width: number;
-  height: number;
-  color: string;
-  rotation: number;
-}
 
 interface ImageAnnotationToolProps {
   onExport: (data: ExportedRectangle[]) => void;
@@ -27,8 +18,7 @@ interface ExportedRectangle {
 const ImageAnnotationTool: React.FC<ImageAnnotationToolProps> = ({
   onExport,
 }) => {
-  const annotationContext = useAnnotation();
-  const [rectangles, setRectangles] = useState<Rectangle[]>([]);
+  const { rectangles, setRectangles, image, annotationMode } = useAnnotation();
   const [selectedRect, setSelectedRect] = useState<number | null>(null);
   const [isDrawing, setIsDrawing] = useState(false);
   const [isResizing, setIsResizing] = useState(false);
@@ -42,12 +32,8 @@ const ImageAnnotationTool: React.FC<ImageAnnotationToolProps> = ({
 
   const handleKeyDown = useCallback(
     (e: KeyboardEvent) => {
-
-      console.log(selectedRect, e.key);
       if (e.key === "Backspace" && selectedRect !== null) {
-        setRectangles((prevRectangles) =>
-          prevRectangles.filter((_, index) => index !== selectedRect)
-        );
+        setRectangles(rectangles.filter((_, index) => index !== selectedRect));
         setSelectedRect(null);
       }
     },
@@ -62,13 +48,13 @@ const ImageAnnotationTool: React.FC<ImageAnnotationToolProps> = ({
   }, [handleKeyDown]);
 
   const handleMouseDown = (e: React.MouseEvent<HTMLDivElement>) => {
-    if (!containerRef.current || !annotationContext.image) return;
+    if (!containerRef.current || !image) return;
 
     const rect = containerRef.current.getBoundingClientRect();
     const x = e.clientX - rect.left;
     const y = e.clientY - rect.top;
 
-    if (annotationContext.annotationMode === AnnotationMode.Rectangle) {
+    if (annotationMode === AnnotationMode.Rectangle) {
       setStartPoint({ x, y });
       const newRect: Rectangle = {
         x,
@@ -95,7 +81,7 @@ const ImageAnnotationTool: React.FC<ImageAnnotationToolProps> = ({
 
   const handleMouseMove = useCallback(
     (e: React.MouseEvent<HTMLDivElement>) => {
-      if (!containerRef.current || !annotationContext.image) return;
+      if (!containerRef.current || !image) return;
 
       const rect = containerRef.current.getBoundingClientRect();
       const x = e.clientX - rect.left;
@@ -185,7 +171,10 @@ const ImageAnnotationTool: React.FC<ImageAnnotationToolProps> = ({
             } else if (isRotating && startPoint) {
               const centerX = r.x + r.width / 2;
               const centerY = r.y + r.height / 2;
-              const startAngle = Math.atan2(startPoint.y - centerY, startPoint.x - centerX);
+              const startAngle = Math.atan2(
+                startPoint.y - centerY,
+                startPoint.x - centerX
+              );
               const currentAngle = Math.atan2(y - centerY, x - centerX);
               const angleDiff = currentAngle - startAngle;
               const rotationDiff = angleDiff * (180 / Math.PI);
@@ -211,7 +200,7 @@ const ImageAnnotationTool: React.FC<ImageAnnotationToolProps> = ({
       isRotating,
       startPoint,
       resizeHandle,
-      annotationContext.image,
+      image,
     ]
   );
 
@@ -264,10 +253,18 @@ const ImageAnnotationTool: React.FC<ImageAnnotationToolProps> = ({
       onMouseMove={handleMouseMove}
       onMouseUp={handleMouseUp}
     >
-      {annotationContext.image && (
-        <div style={{ display: "flex", justifyContent: "center", alignItems: "center", width: "100%", height: "100%" }}>
+      {image && (
+        <div
+          style={{
+            display: "flex",
+            justifyContent: "center",
+            alignItems: "center",
+            width: "100%",
+            height: "100%",
+          }}
+        >
           <img
-            src={annotationContext.image.src}
+            src={image.src}
             alt="Annotation"
             style={{
               display: "block",

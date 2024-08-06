@@ -7,6 +7,18 @@ interface AnnotationContextType {
 
   annotationMode: AnnotationMode;
   setAnnotationMode: (mode: AnnotationMode) => void;
+
+  rectangles: Rectangle[];
+  setRectangles: (rectangles: Rectangle[]) => void | Rectangle[];
+}
+
+export interface Rectangle {
+  x: number;
+  y: number;
+  width: number;
+  height: number;
+  color: string;
+  rotation: number;
 }
 
 const AnnotationContext = createContext<AnnotationContextType | undefined>(
@@ -32,6 +44,8 @@ export const AnnotationProvider: React.FC<AnnotationProviderProps> = ({
   // No state or data as per the instructions
   const [image, setImage] = useState<HTMLImageElement | null>(null);
 
+  const [rectangles, setRectangles] = useState<Rectangle[]>([]);
+
   const [annotationMode, setAnnotationMode] = useState(AnnotationMode.None);
 
   const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -51,7 +65,14 @@ export const AnnotationProvider: React.FC<AnnotationProviderProps> = ({
 
   return (
     <AnnotationContext.Provider
-      value={{ image, handleImageChange, annotationMode, setAnnotationMode }}
+      value={{
+        image,
+        handleImageChange,
+        annotationMode,
+        setAnnotationMode,
+        rectangles,
+        setRectangles,
+      }}
     >
       {children}
     </AnnotationContext.Provider>
