@@ -19,6 +19,7 @@ export interface Rectangle {
   height: number;
   color: string;
   rotation: number;
+  name?: string;
 }
 
 const AnnotationContext = createContext<AnnotationContextType | undefined>(

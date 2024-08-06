@@ -272,6 +272,10 @@ const ImageAnnotationTool: React.FC<ImageAnnotationToolProps> = ({
               maxHeight: "100%",
               objectFit: "contain",
               pointerEvents: "none",
+              userSelect: "none",
+              WebkitUserSelect: "none",
+              MozUserSelect: "none",
+              msUserSelect: "none",
             }}
           />
         </div>
