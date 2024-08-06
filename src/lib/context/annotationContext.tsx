@@ -4,15 +4,14 @@ import { AnnotationMode } from "../types";
 interface AnnotationContextType {
   image: HTMLImageElement | null;
   handleImageChange: (event: React.ChangeEvent<HTMLInputElement>) => void;
-
   annotationMode: AnnotationMode;
-  setAnnotationMode: (mode: AnnotationMode) => void;
+  setAnnotationMode: React.Dispatch<React.SetStateAction<AnnotationMode>>;
 
   rectangles: Rectangle[];
-  setRectangles: (rectangles: Rectangle[]) => void | Rectangle[];
+  setRectangles: React.Dispatch<React.SetStateAction<Rectangle[]>>;
 
   selectedRect: number | null;
-  setSelectedRect: (index: number | null) => void;
+  setSelectedRect: React.Dispatch<React.SetStateAction<number | null>>;
 }
 
 export interface Rectangle {

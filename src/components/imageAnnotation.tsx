@@ -1,6 +1,7 @@
 import React, { useState, useRef, useCallback } from "react";
 import { Rectangle, useAnnotation } from "../lib/context/annotationContext";
 import { AnnotationMode } from "../lib/types";
+import { isPointInRect, resizeHandleStyle, rotateHandleStyle } from "../lib/ui";
 
 interface ImageAnnotationToolProps {
   onExport: (data: ExportedRectangle[]) => void;
@@ -15,6 +16,14 @@ interface ExportedRectangle {
   rotation: number;
 }
 
+enum InteractionState {
+  None,
+  Drawing,
+  Resizing,
+  Dragging,
+  Rotating,
+}
+
 const ImageAnnotationTool: React.FC<ImageAnnotationToolProps> = ({
   onExport,
 }) => {
@@ -26,10 +35,9 @@ const ImageAnnotationTool: React.FC<ImageAnnotationToolProps> = ({
     selectedRect,
     setSelectedRect,
   } = useAnnotation();
-  const [isDrawing, setIsDrawing] = useState(false);
-  const [isResizing, setIsResizing] = useState(false);
-  const [isDragging, setIsDragging] = useState(false);
-  const [isRotating, setIsRotating] = useState(false);
+  const [interactionState, setInteractionState] = useState<InteractionState>(
+    InteractionState.None
+  );
   const [resizeHandle, setResizeHandle] = useState<string | null>(null);
   const [startPoint, setStartPoint] = useState<{ x: number; y: number } | null>(
     null
@@ -40,6 +48,30 @@ const ImageAnnotationTool: React.FC<ImageAnnotationToolProps> = ({
     (e: KeyboardEvent) => {
       if (e.key === "Backspace" && selectedRect !== null) {
         setRectangles(rectangles.filter((_, index) => index !== selectedRect));
+        setSelectedRect(null);
+      }
+
+      if (selectedRect !== null) {
+        const arrowKeys = {
+          ArrowRight: { x: 1, y: 0 },
+          ArrowLeft: { x: -1, y: 0 },
+          ArrowUp: { x: 0, y: -1 },
+          ArrowDown: { x: 0, y: 1 },
+        };
+
+        if (e.key in arrowKeys) {
+          const { x, y } = arrowKeys[e.key as keyof typeof arrowKeys];
+          setRectangles((prevRectangles) =>
+            prevRectangles.map((rect, index) =>
+              index === selectedRect
+                ? { ...rect, x: rect.x + x, y: rect.y + y }
+                : rect
+            )
+          );
+        }
+      }
+
+      if (e.key === "Enter" && selectedRect !== null) {
         setSelectedRect(null);
       }
     },
@@ -72,12 +104,12 @@ const ImageAnnotationTool: React.FC<ImageAnnotationToolProps> = ({
       };
       setRectangles([...rectangles, newRect]);
       setSelectedRect(rectangles.length);
-      setIsDrawing(true);
+      setInteractionState(InteractionState.Drawing);
     } else {
       const clickedRect = rectangles.findIndex((r) => isPointInRect(x, y, r));
       if (clickedRect !== -1) {
         setSelectedRect(clickedRect);
-        setIsDragging(true);
+        setInteractionState(InteractionState.Dragging);
         setStartPoint({ x, y });
       } else {
         setSelectedRect(null);
@@ -93,117 +125,135 @@ const ImageAnnotationTool: React.FC<ImageAnnotationToolProps> = ({
       const x = e.clientX - rect.left;
       const y = e.clientY - rect.top;
 
+      const handleDrawing = (r: Rectangle, x: number, y: number) => {
+        if (startPoint) {
+          const newX = Math.min(x, startPoint.x);
+          const newY = Math.min(y, startPoint.y);
+          const newWidth = Math.abs(x - startPoint.x);
+          const newHeight = Math.abs(y - startPoint.y);
+          return { ...r, x: newX, y: newY, width: newWidth, height: newHeight };
+        }
+        return r;
+      };
+
+      const handleResizing = (r: Rectangle, x: number, y: number) => {
+        if (startPoint && resizeHandle) {
+          let newX = r.x,
+            newY = r.y,
+            newWidth = r.width,
+            newHeight = r.height;
+          const dx = x - startPoint.x;
+          const dy = y - startPoint.y;
+
+          switch (resizeHandle) {
+            case "n":
+              newY = r.y + dy;
+              newHeight = r.height - dy;
+              break;
+            case "s":
+              newHeight = r.height + dy;
+              break;
+            case "w":
+              newX = r.x + dx;
+              newWidth = r.width - dx;
+              break;
+            case "e":
+              newWidth = r.width + dx;
+              break;
+            case "nw":
+              newX = r.x + dx;
+              newY = r.y + dy;
+              newWidth = r.width - dx;
+              newHeight = r.height - dy;
+              break;
+            case "ne":
+              newY = r.y + dy;
+              newWidth = r.width + dx;
+              newHeight = r.height - dy;
+              break;
+            case "sw":
+              newX = r.x + dx;
+              newWidth = r.width - dx;
+              newHeight = r.height + dy;
+              break;
+            case "se":
+              newWidth = r.width + dx;
+              newHeight = r.height + dy;
+              break;
+          }
+
+          if (newWidth < 0) {
+            newX += newWidth;
+            newWidth = Math.abs(newWidth);
+          }
+          if (newHeight < 0) {
+            newY += newHeight;
+            newHeight = Math.abs(newHeight);
+          }
+
+          return { ...r, x: newX, y: newY, width: newWidth, height: newHeight };
+        }
+        return r;
+      };
+
+      const handleDragging = (r: Rectangle, x: number, y: number) => {
+        if (startPoint) {
+          const dx = x - startPoint.x;
+          const dy = y - startPoint.y;
+          return { ...r, x: r.x + dx, y: r.y + dy };
+        }
+        return r;
+      };
+
+      const handleRotating = (r: Rectangle, x: number, y: number) => {
+        if (startPoint) {
+          const centerX = r.x + r.width / 2;
+          const centerY = r.y + r.height / 2;
+          const startAngle = Math.atan2(
+            startPoint.y - centerY,
+            startPoint.x - centerX
+          );
+          const currentAngle = Math.atan2(y - centerY, x - centerX);
+          const angleDiff = currentAngle - startAngle;
+          const rotationDiff = angleDiff * (180 / Math.PI);
+          const dampingFactor = 0.91;
+          const newRotation = r.rotation + rotationDiff * dampingFactor;
+          return { ...r, rotation: newRotation };
+        }
+        return r;
+      };
+
       setRectangles(
         rectangles.map((r, i) => {
           if (i === selectedRect) {
-            if (isDrawing && startPoint) {
-              const newX = Math.min(x, startPoint.x);
-              const newY = Math.min(y, startPoint.y);
-              const newWidth = Math.abs(x - startPoint.x);
-              const newHeight = Math.abs(y - startPoint.y);
-              return {
-                ...r,
-                x: newX,
-                y: newY,
-                width: newWidth,
-                height: newHeight,
-              };
-            } else if (isResizing && startPoint && resizeHandle) {
-              let newX = r.x,
-                newY = r.y,
-                newWidth = r.width,
-                newHeight = r.height;
-              const dx = x - startPoint.x;
-              const dy = y - startPoint.y;
-
-              switch (resizeHandle) {
-                case "n":
-                  newY = r.y + dy;
-                  newHeight = r.height - dy;
-                  break;
-                case "s":
-                  newHeight = r.height + dy;
-                  break;
-                case "w":
-                  newX = r.x + dx;
-                  newWidth = r.width - dx;
-                  break;
-                case "e":
-                  newWidth = r.width + dx;
-                  break;
-                case "nw":
-                  newX = r.x + dx;
-                  newY = r.y + dy;
-                  newWidth = r.width - dx;
-                  newHeight = r.height - dy;
-                  break;
-                case "ne":
-                  newY = r.y + dy;
-                  newWidth = r.width + dx;
-                  newHeight = r.height - dy;
-                  break;
-                case "sw":
-                  newX = r.x + dx;
-                  newWidth = r.width - dx;
-                  newHeight = r.height + dy;
-                  break;
-                case "se":
-                  newWidth = r.width + dx;
-                  newHeight = r.height + dy;
-                  break;
-              }
-
-              // Ensure width and height are not negative
-              if (newWidth < 0) {
-                newX += newWidth;
-                newWidth = Math.abs(newWidth);
-              }
-              if (newHeight < 0) {
-                newY += newHeight;
-                newHeight = Math.abs(newHeight);
-              }
-
-              return {
-                ...r,
-                x: newX,
-                y: newY,
-                width: newWidth,
-                height: newHeight,
-              };
-            } else if (isDragging && startPoint) {
-              const dx = x - startPoint.x;
-              const dy = y - startPoint.y;
-              return { ...r, x: r.x + dx, y: r.y + dy };
-            } else if (isRotating && startPoint) {
-              const centerX = r.x + r.width / 2;
-              const centerY = r.y + r.height / 2;
-              const startAngle = Math.atan2(
-                startPoint.y - centerY,
-                startPoint.x - centerX
-              );
-              const currentAngle = Math.atan2(y - centerY, x - centerX);
-              const angleDiff = currentAngle - startAngle;
-              const rotationDiff = angleDiff * (180 / Math.PI);
-              const dampingFactor = 0.91; // Reduced damping by 90% (from 0.1 to 0.91)
-              const newRotation = r.rotation + rotationDiff * dampingFactor;
-              return { ...r, rotation: newRotation };
+            switch (interactionState) {
+              case InteractionState.Drawing:
+                return handleDrawing(r, x, y);
+              case InteractionState.Resizing:
+                return handleResizing(r, x, y);
+              case InteractionState.Dragging:
+                return handleDragging(r, x, y);
+              case InteractionState.Rotating:
+                return handleRotating(r, x, y);
+              default:
+                return r;
             }
           }
           return r;
         })
       );
 
-      if (isDragging || isResizing || isRotating) {
+      if (
+        interactionState !== InteractionState.None &&
+        interactionState !== InteractionState.Drawing
+      ) {
         setStartPoint({ x, y });
       }
     },
     [
       rectangles,
       selectedRect,
-      isDrawing,
-      isResizing,
-      isDragging,
-      isRotating,
+      interactionState,
       startPoint,
       resizeHandle,
       image,
@@ -211,44 +261,22 @@ const ImageAnnotationTool: React.FC<ImageAnnotationToolProps> = ({
   );
 
   const handleMouseUp = () => {
-    setIsDrawing(false);
-    setIsResizing(false);
-    setIsDragging(false);
-    setIsRotating(false);
+    setInteractionState(InteractionState.None);
     setResizeHandle(null);
     setStartPoint(null);
   };
 
   const handleResizeStart = (e: React.MouseEvent, handle: string) => {
     e.stopPropagation();
-    setIsResizing(true);
+    setInteractionState(InteractionState.Resizing);
     setResizeHandle(handle);
     setStartPoint({ x: e.clientX, y: e.clientY });
   };
 
   const handleRotateStart = (e: React.MouseEvent) => {
     e.stopPropagation();
-    setIsRotating(true);
+    setInteractionState(InteractionState.Rotating);
     setStartPoint({ x: e.clientX, y: e.clientY });
-  };
-
-  const isPointInRect = (x: number, y: number, rect: Rectangle): boolean => {
-    const centerX = rect.x + rect.width / 2;
-    const centerY = rect.y + rect.height / 2;
-    const rotatedX =
-      (x - centerX) * Math.cos((-rect.rotation * Math.PI) / 180) -
-      (y - centerY) * Math.sin((-rect.rotation * Math.PI) / 180) +
-      centerX;
-    const rotatedY =
-      (x - centerX) * Math.sin((-rect.rotation * Math.PI) / 180) +
-      (y - centerY) * Math.cos((-rect.rotation * Math.PI) / 180) +
-      centerY;
-    return (
-      rotatedX >= rect.x &&
-      rotatedX <= rect.x + rect.width &&
-      rotatedY >= rect.y &&
-      rotatedY <= rect.y + rect.height
-    );
   };
 
   return (
@@ -359,69 +387,5 @@ const ImageAnnotationTool: React.FC<ImageAnnotationToolProps> = ({
     </div>
   );
 };
-
-const resizeHandleStyle = (position: string): React.CSSProperties => {
-  const base: React.CSSProperties = {
-    position: "absolute",
-    width: "10px",
-    height: "10px",
-    backgroundColor: "white",
-    border: "1px solid black",
-    borderRadius: "50%",
-  };
-
-  switch (position) {
-    case "n":
-      return {
-        ...base,
-        top: "-5px",
-        left: "calc(50% - 5px)",
-        cursor: "ns-resize",
-      };
-    case "s":
-      return {
-        ...base,
-        bottom: "-5px",
-        left: "calc(50% - 5px)",
-        cursor: "ns-resize",
-      };
-    case "e":
-      return {
-        ...base,
-        right: "-5px",
-        top: "calc(50% - 5px)",
-        cursor: "ew-resize",
-      };
-    case "w":
-      return {
-        ...base,
-        left: "-5px",
-        top: "calc(50% - 5px)",
-        cursor: "ew-resize",
-      };
-    case "ne":
-      return { ...base, top: "-5px", right: "-5px", cursor: "nesw-resize" };
-    case "nw":
-      return { ...base, top: "-5px", left: "-5px", cursor: "nwse-resize" };
-    case "se":
-      return { ...base, bottom: "-5px", right: "-5px", cursor: "nwse-resize" };
-    case "sw":
-      return { ...base, bottom: "-5px", left: "-5px", cursor: "nesw-resize" };
-    default:
-      return base;
-  }
-};
-
-const rotateHandleStyle = (): React.CSSProperties => ({
-  position: "absolute",
-  width: "10px",
-  height: "10px",
-  borderRadius: "50%",
-  top: "-30px",
-  left: "calc(50% - 5px)",
-  cursor: "grab",
-  backgroundColor: "white",
-  border: "1px solid black",
-});
 
 export default ImageAnnotationTool;
