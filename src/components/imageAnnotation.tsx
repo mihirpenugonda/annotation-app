@@ -331,6 +331,7 @@ const ImageAnnotationTool: React.FC<ImageAnnotationToolProps> = ({
                 ? "rgba(255, 255, 255, 0.3)"
                 : "transparent",
             zIndex: index === selectedRect ? 5 : "auto",
+            transition: "background-color 0.3s ease",
           }}
         >
           {index === selectedRect && (
