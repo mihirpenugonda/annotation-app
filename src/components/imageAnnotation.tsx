@@ -18,8 +18,14 @@ interface ExportedRectangle {
 const ImageAnnotationTool: React.FC<ImageAnnotationToolProps> = ({
   onExport,
 }) => {
-  const { rectangles, setRectangles, image, annotationMode } = useAnnotation();
-  const [selectedRect, setSelectedRect] = useState<number | null>(null);
+  const {
+    rectangles,
+    setRectangles,
+    image,
+    annotationMode,
+    selectedRect,
+    setSelectedRect,
+  } = useAnnotation();
   const [isDrawing, setIsDrawing] = useState(false);
   const [isResizing, setIsResizing] = useState(false);
   const [isDragging, setIsDragging] = useState(false);
@@ -296,6 +302,7 @@ const ImageAnnotationTool: React.FC<ImageAnnotationToolProps> = ({
               index === selectedRect
                 ? "rgba(255, 255, 255, 0.3)"
                 : "transparent",
+            zIndex: index === selectedRect ? 5 : "auto",
           }}
         >
           {index === selectedRect && (

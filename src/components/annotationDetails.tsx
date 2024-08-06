@@ -7,7 +7,7 @@ import { Input } from "./ui/input";
 import { useAnnotation } from "../lib/context/annotationContext";
 
 const AnnotationDetails: React.FC = () => {
-  const { rectangles, setRectangles } = useAnnotation();
+  const { rectangles, setRectangles, setSelectedRect } = useAnnotation();
   const [editingIndex, setEditingIndex] = useState<number | null>(null);
   const [editingName, setEditingName] = useState("");
 
@@ -38,7 +38,11 @@ const AnnotationDetails: React.FC = () => {
           <h3 className="text-lg font-semibold mb-4">Rectangles</h3>
           <ScrollArea className="h-[calc(100vh-8rem)]">
             {rectangles.map((rect, index) => (
-              <Card key={index} className="mb-3 p-3">
+              <Card
+                key={index}
+                className="mb-3 p-3"
+                onClick={() => setSelectedRect(index)}
+              >
                 <div className="flex justify-between items-center mb-1">
                   {editingIndex === index ? (
                     <Input

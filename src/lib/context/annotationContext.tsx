@@ -10,6 +10,9 @@ interface AnnotationContextType {
 
   rectangles: Rectangle[];
   setRectangles: (rectangles: Rectangle[]) => void | Rectangle[];
+
+  selectedRect: number | null;
+  setSelectedRect: (index: number | null) => void;
 }
 
 export interface Rectangle {
@@ -47,6 +50,8 @@ export const AnnotationProvider: React.FC<AnnotationProviderProps> = ({
 
   const [rectangles, setRectangles] = useState<Rectangle[]>([]);
 
+  const [selectedRect, setSelectedRect] = useState<number | null>(null);
+
   const [annotationMode, setAnnotationMode] = useState(AnnotationMode.None);
 
   const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -73,6 +78,8 @@ export const AnnotationProvider: React.FC<AnnotationProviderProps> = ({
         setAnnotationMode,
         rectangles,
         setRectangles,
+        selectedRect,
+        setSelectedRect,
       }}
     >
       {children}
