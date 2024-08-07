@@ -1,47 +1,45 @@
-import React, { useState } from "react";
-import { Trash2, Edit2, Check, ChevronRight, ChevronLeft } from "lucide-react";
+import React, { useState, useEffect, useCallback } from "react";
+import {
+  Trash2,
+  Edit2,
+  ChevronRight,
+  ChevronLeft,
+  Save,
+  AlertCircle,
+  Image,
+} from "lucide-react";
 import { ScrollArea } from "@radix-ui/react-scroll-area";
 import { Button } from "./ui/button";
-import { Card, CardContent } from "./ui/card";
 import { Input } from "./ui/input";
-import { useAnnotation } from "../lib/context/annotationContext";
 import { Slider } from "./ui/slider";
+import { useAnnotation } from "../lib/context/annotationContext";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogFooter,
+} from "./ui/dialog";
 
 const AnnotationDetails: React.FC = () => {
   const {
-    image,
     rectangles,
     setRectangles,
     selectedRect,
     setSelectedRect,
     imageTransform,
     setImageTransform,
+    templates,
+    unsavedChanges,
+    saveTemplate,
+    loadTemplate,
+    deleteTemplate,
+    image,
   } = useAnnotation();
 
-  const [editingIndex, setEditingIndex] = useState<number | null>(null);
-  const [editingName, setEditingName] = useState("");
   const [isCollapsed, setIsCollapsed] = useState(false);
-
-  const handleDeleteRectangle = (index: number) => {
-    setRectangles(rectangles.filter((_, i) => i !== index));
-    if (selectedRect === index) setSelectedRect(null);
-  };
-
-  const handleEditName = (index: number) => {
-    setEditingIndex(index);
-    setEditingName(rectangles[index].name || `Rectangle ${index + 1}`);
-  };
-
-  const handleSaveName = () => {
-    if (editingIndex !== null) {
-      setRectangles(
-        rectangles.map((rect, index) =>
-          index === editingIndex ? { ...rect, name: editingName } : rect
-        )
-      );
-      setEditingIndex(null);
-    }
-  };
+  const [newTemplateName, setNewTemplateName] = useState("");
+  const [isSaveDialogOpen, setIsSaveDialogOpen] = useState(false);
 
   const handleTransformChange =
     (property: "rotation" | "tilt") => (value: number[]) => {
@@ -51,83 +49,38 @@ const AnnotationDetails: React.FC = () => {
       }));
     };
 
-  const renderRectangleCard = (rect: any, index: number) => {
-    const isSelected = selectedRect === index;
-    const isEditing = editingIndex === index;
+  const handleSaveTemplate = useCallback(async () => {
+    if (newTemplateName.trim()) {
+      await saveTemplate(newTemplateName.trim());
+      setNewTemplateName("");
+      setIsSaveDialogOpen(false);
+    }
+  }, [newTemplateName, saveTemplate]);
 
-    return (
-      <Card
-        key={index}
-        className={`mb-3 p-3 ${
-          isSelected ? "bg-blue-100" : ""
-        } hover:bg-gray-50 transition-colors`}
-        onClick={() => setSelectedRect(index)}
-      >
-        <div className="flex justify-between items-center mb-1">
-          {isEditing ? renderEditInput() : renderRectangleName(rect, index)}
-          {renderActionButtons(index, isEditing)}
-        </div>
-        <div className="text-sm text-gray-500">
-          {rect.width.toFixed(0)}x{rect.height.toFixed(0)}
-        </div>
-      </Card>
-    );
+  const handleDeleteTemplate = async (id: string) => {
+    await deleteTemplate(id);
   };
 
-  const renderEditInput = () => (
-    <Input
-      value={editingName}
-      onChange={(e) => setEditingName(e.target.value)}
-      onKeyPress={(e) => {
-        if (e.key === "Enter") handleSaveName();
-      }}
-      onClick={(e) => e.stopPropagation()}
-      className="flex-grow mr-2"
-      autoFocus
-    />
+  const handleKeyDown = useCallback(
+    (event: KeyboardEvent) => {
+      if (event.ctrlKey && event.key === "s") {
+        event.preventDefault();
+        if (newTemplateName.trim()) {
+          handleSaveTemplate();
+        } else {
+          setIsSaveDialogOpen(true);
+        }
+      }
+    },
+    [newTemplateName, handleSaveTemplate]
   );
 
-  const renderRectangleName = (rect: any, index: number) => (
-    <span className="font-medium">{rect.name || `Rectangle ${index + 1}`}</span>
-  );
-
-  const renderActionButtons = (index: number, isEditing: boolean) => (
-    <div className="flex space-x-1">
-      {isEditing ? (
-        <Button
-          variant="ghost"
-          size="icon"
-          onClick={handleSaveName}
-          className="h-8 w-8"
-        >
-          <Check className="h-4 w-4" />
-        </Button>
-      ) : (
-        <Button
-          variant="ghost"
-          size="icon"
-          onClick={(e) => {
-            e.stopPropagation();
-            handleEditName(index);
-          }}
-          className="h-8 w-8"
-        >
-          <Edit2 className="h-4 w-4" />
-        </Button>
-      )}
-      <Button
-        variant="ghost"
-        size="icon"
-        onClick={(e) => {
-          e.stopPropagation();
-          handleDeleteRectangle(index);
-        }}
-        className="h-8 w-8"
-      >
-        <Trash2 className="h-4 w-4" />
-      </Button>
-    </div>
-  );
+  useEffect(() => {
+    window.addEventListener("keydown", handleKeyDown);
+    return () => {
+      window.removeEventListener("keydown", handleKeyDown);
+    };
+  }, [handleKeyDown]);
 
   const renderSlider = (
     label: string,
@@ -152,72 +105,189 @@ const AnnotationDetails: React.FC = () => {
     </div>
   );
 
-  const toggleCollapse = () => {
-    setIsCollapsed(!isCollapsed);
-  };
+  const renderRectangleCard = (rect: any, index: number) => (
+    <div
+      key={index}
+      className={`mb-2 p-2 border rounded ${
+        selectedRect === index ? "bg-blue-100" : ""
+      }`}
+      onClick={() => setSelectedRect(index)}
+    >
+      <div className="flex justify-between items-center">
+        <span className="font-medium">
+          {rect.name || `Rectangle ${index + 1}`}
+        </span>
+        <div className="flex space-x-1">
+          <Button
+            variant="ghost"
+            size="icon"
+            onClick={(e) => {
+              e.stopPropagation();
+              setRectangles(rectangles.filter((_, i) => i !== index));
+              if (selectedRect === index) setSelectedRect(null);
+            }}
+          >
+            <Trash2 className="h-4 w-4" />
+          </Button>
+        </div>
+      </div>
+      <div className="text-sm text-gray-500">
+        {rect.width.toFixed(0)}x{rect.height.toFixed(0)}
+      </div>
+    </div>
+  );
 
   return (
-    <div
-      className={`fixed right-0 top-0 bottom-0 z-10 flex items-center transition-all duration-300 ease-in-out ${
-        isCollapsed ? "w-16" : "w-72"
-      }`}
-    >
+    <>
       <div
-        className={`absolute right-0 top-0 bottom-0 bg-white shadow-lg transition-all duration-300 ease-in-out ${
+        className={`fixed right-0 top-0 bottom-0 z-10 flex items-center transition-all duration-300 ease-in-out ${
           isCollapsed ? "w-16" : "w-72"
         }`}
       >
-        {isCollapsed ? (
-          <Button
-            variant="outline"
-            size="icon"
-            className="absolute top-1/2 -translate-y-1/2 left-2 rounded-full h-12 w-12"
-            onClick={toggleCollapse}
-          >
-            <ChevronLeft className="h-6 w-6" />
-          </Button>
-        ) : (
-          <div className="h-full flex flex-col">
-            <div className="p-4 border-b">
-              <div className="flex justify-between items-center">
+        <div
+          className={`absolute right-0 top-0 bottom-0 bg-white shadow-lg transition-all duration-300 ease-in-out ${
+            isCollapsed ? "w-16" : "w-72"
+          }`}
+        >
+          {isCollapsed ? (
+            <Button
+              variant="outline"
+              size="icon"
+              className="absolute top-1/2 -translate-y-1/2 left-2 rounded-full h-12 w-12"
+              onClick={() => setIsCollapsed(false)}
+            >
+              <ChevronLeft className="h-6 w-6" />
+            </Button>
+          ) : (
+            <div className="h-full flex flex-col">
+              <div className="p-4 border-b flex justify-between items-center">
                 <h3 className="text-lg font-semibold">Annotations</h3>
-                <Button
-                  variant="outline"
-                  size="icon"
-                  className="h-8 w-8"
-                  onClick={toggleCollapse}
-                >
-                  <ChevronRight className="h-4 w-4" />
-                </Button>
+                <div className="flex items-center">
+                  {unsavedChanges && (
+                    <AlertCircle className="h-5 w-5 text-yellow-500 mr-2" />
+                  )}
+                  <Button
+                    variant="outline"
+                    size="icon"
+                    className="h-8 w-8"
+                    onClick={() => setIsCollapsed(true)}
+                  >
+                    <ChevronRight className="h-4 w-4" />
+                  </Button>
+                </div>
               </div>
+
+              {image && (
+                <div className="p-4 border-b">
+                  {renderSlider(
+                    "Rotation",
+                    imageTransform.rotation,
+                    handleTransformChange("rotation"),
+                    0,
+                    360
+                  )}
+                  {renderSlider(
+                    "Tilt",
+                    imageTransform.tilt,
+                    handleTransformChange("tilt"),
+                    -30,
+                    30
+                  )}
+                </div>
+              )}
+
+              {rectangles.length > 0 && (
+                <div className="p-4 border-b">
+                  <h4 className="text-sm font-medium mb-2">Save Template</h4>
+                  <div className="flex items-center">
+                    <Input
+                      value={newTemplateName}
+                      onChange={(e) => setNewTemplateName(e.target.value)}
+                      placeholder="Template name"
+                      className="flex-grow mr-2"
+                    />
+                    <Button
+                      variant="outline"
+                      size="icon"
+                      onClick={handleSaveTemplate}
+                      disabled={!newTemplateName.trim()}
+                    >
+                      <Save className="h-4 w-4" />
+                    </Button>
+                  </div>
+                </div>
+              )}
+
+              <ScrollArea className="flex-grow">
+                <div className="p-4 border-b">
+                  <h4 className="text-sm font-medium mb-2">Saved Templates</h4>
+                  {templates.map((template) => (
+                    <div key={template.id} className="mb-2 p-2 border rounded">
+                      <div className="flex justify-between items-center">
+                        <span className="font-medium">{template.name}</span>
+                        <div>
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => loadTemplate(template.id)}
+                            className="mr-1"
+                          >
+                            Load
+                          </Button>
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => handleDeleteTemplate(template.id)}
+                          >
+                            <Trash2 className="h-4 w-4" />
+                          </Button>
+                        </div>
+                      </div>
+                      <div className="text-xs text-gray-500 mt-1">
+                        <Image className="inline-block mr-1" size={12} />
+                        {template.originalImageSize.width} x{" "}
+                        {template.originalImageSize.height}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+
+                <div className="p-4">
+                  <h4 className="text-sm font-medium mb-2">Rectangles</h4>
+                  {rectangles.map(renderRectangleCard)}
+                </div>
+              </ScrollArea>
             </div>
-
-            {image && (
-              <div className="p-4 border-b">
-                {renderSlider(
-                  "Rotation",
-                  imageTransform.rotation,
-                  handleTransformChange("rotation"),
-                  0,
-                  360
-                )}
-                {renderSlider(
-                  "Tilt",
-                  imageTransform.tilt,
-                  handleTransformChange("tilt"),
-                  -45,
-                  45
-                )}
-              </div>
-            )}
-
-            <ScrollArea className="flex-grow p-4">
-              {rectangles.map(renderRectangleCard)}
-            </ScrollArea>
-          </div>
-        )}
+          )}
+        </div>
       </div>
-    </div>
+      <Dialog open={isSaveDialogOpen} onOpenChange={setIsSaveDialogOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Save Template</DialogTitle>
+          </DialogHeader>
+          <Input
+            value={newTemplateName}
+            onChange={(e) => setNewTemplateName(e.target.value)}
+            placeholder="Enter template name"
+          />
+          <DialogFooter>
+            <Button
+              onClick={() => setIsSaveDialogOpen(false)}
+              variant="outline"
+            >
+              Cancel
+            </Button>
+            <Button
+              onClick={handleSaveTemplate}
+              disabled={!newTemplateName.trim()}
+            >
+              Save
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+    </>
   );
 };
 

@@ -1,20 +1,9 @@
 import React, { useState, useRef, useCallback } from "react";
-import { Rectangle, useAnnotation } from "../lib/context/annotationContext";
-import { AnnotationMode } from "../lib/types";
+import { useAnnotation } from "../lib/context/annotationContext";
+import { AnnotationMode, Rectangle } from "../lib/types";
 import { isPointInRect, resizeHandleStyle, rotateHandleStyle } from "../lib/ui";
 
-interface ImageAnnotationToolProps {
-  onExport: (data: ExportedRectangle[]) => void;
-}
-
-interface ExportedRectangle {
-  x: number;
-  y: number;
-  width: number;
-  height: number;
-  color: string;
-  rotation: number;
-}
+interface ImageAnnotationToolProps {}
 
 enum InteractionState {
   None,
@@ -24,9 +13,7 @@ enum InteractionState {
   Rotating,
 }
 
-const ImageAnnotationTool: React.FC<ImageAnnotationToolProps> = ({
-  onExport,
-}) => {
+const ImageAnnotationTool: React.FC<ImageAnnotationToolProps> = () => {
   const {
     rectangles,
     setRectangles,

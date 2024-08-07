@@ -1,4 +1,4 @@
-import { Rectangle } from "./context/annotationContext";
+import { Rectangle } from "./types";
 
 export const resizeHandleStyle = (position: string): React.CSSProperties => {
   const base: React.CSSProperties = {
@@ -64,7 +64,11 @@ export const rotateHandleStyle = (): React.CSSProperties => ({
   border: "1px solid black",
 });
 
-export const isPointInRect = (x: number, y: number, rect: Rectangle): boolean => {
+export const isPointInRect = (
+  x: number,
+  y: number,
+  rect: Rectangle
+): boolean => {
   const centerX = rect.x + rect.width / 2;
   const centerY = rect.y + rect.height / 2;
   const rotatedX =
