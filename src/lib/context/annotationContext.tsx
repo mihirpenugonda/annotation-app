@@ -5,7 +5,12 @@ import React, {
   useState,
   useEffect,
 } from "react";
-import { AnnotationMode, Rectangle, RelativeRectangle, Template } from "../types";
+import {
+  AnnotationMode,
+  Rectangle,
+  RelativeRectangle,
+  Template,
+} from "../types";
 import {
   deleteTemplateFromStorage,
   fetchTemplates,
@@ -63,7 +68,6 @@ interface AnnotationProviderProps {
 export const AnnotationProvider: React.FC<AnnotationProviderProps> = ({
   children,
 }) => {
-  // No state or data as per the instructions
   const [image, setImage] = useState<HTMLImageElement | null>(null);
 
   const [rectangles, setRectangles] = useState<Rectangle[]>([]);

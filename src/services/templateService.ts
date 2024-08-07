@@ -1,12 +1,11 @@
 import { Template } from "../lib/types";
 
 export const fetchTemplates = async (): Promise<Template[]> => {
-  // This function simulates an API call using localStorage
   return new Promise((resolve) => {
     setTimeout(() => {
       const storedTemplates = localStorage.getItem("annotationTemplates");
       resolve(storedTemplates ? JSON.parse(storedTemplates) : []);
-    }, 100); // Simulate network delay
+    }, 100);
   });
 };
 
@@ -20,7 +19,7 @@ export const saveTemplateToStorage = async (
       templates.push(template);
       localStorage.setItem("annotationTemplates", JSON.stringify(templates));
       resolve();
-    }, 100); // Simulate network delay
+    }, 100);
   });
 };
 
@@ -41,6 +40,6 @@ export const deleteTemplateFromStorage = async (
         );
       }
       resolve();
-    }, 100); // Simulate network delay
+    }, 100);
   });
 };
