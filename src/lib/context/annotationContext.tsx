@@ -4,6 +4,7 @@ import { AnnotationMode } from "../types";
 interface AnnotationContextType {
   image: HTMLImageElement | null;
   handleImageChange: (event: React.ChangeEvent<HTMLInputElement>) => void;
+
   annotationMode: AnnotationMode;
   setAnnotationMode: React.Dispatch<React.SetStateAction<AnnotationMode>>;
 
@@ -12,6 +13,14 @@ interface AnnotationContextType {
 
   selectedRect: number | null;
   setSelectedRect: React.Dispatch<React.SetStateAction<number | null>>;
+
+  imageTransform: ImageTransform;
+  setImageTransform: React.Dispatch<React.SetStateAction<ImageTransform>>;
+}
+
+interface ImageTransform {
+  rotation: number;
+  tilt: number;
 }
 
 export interface Rectangle {
@@ -53,6 +62,11 @@ export const AnnotationProvider: React.FC<AnnotationProviderProps> = ({
 
   const [annotationMode, setAnnotationMode] = useState(AnnotationMode.None);
 
+  const [imageTransform, setImageTransform] = useState<ImageTransform>({
+    rotation: 0,
+    tilt: 0,
+  });
+
   const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
@@ -79,6 +93,8 @@ export const AnnotationProvider: React.FC<AnnotationProviderProps> = ({
         setRectangles,
         selectedRect,
         setSelectedRect,
+        imageTransform,
+        setImageTransform,
       }}
     >
       {children}

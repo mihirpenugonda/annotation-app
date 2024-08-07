@@ -34,6 +34,7 @@ const ImageAnnotationTool: React.FC<ImageAnnotationToolProps> = ({
     annotationMode,
     selectedRect,
     setSelectedRect,
+    imageTransform,
   } = useAnnotation();
   const [interactionState, setInteractionState] = useState<InteractionState>(
     InteractionState.None
@@ -301,6 +302,7 @@ const ImageAnnotationTool: React.FC<ImageAnnotationToolProps> = ({
             src={image.src}
             alt="Annotation"
             style={{
+              transform: `rotateX(${imageTransform.tilt}deg) rotate(${imageTransform.rotation}deg)`,
               display: "block",
               maxWidth: "100%",
               maxHeight: "100%",

@@ -5,10 +5,19 @@ import { Button } from "./ui/button";
 import { Card, CardContent } from "./ui/card";
 import { Input } from "./ui/input";
 import { useAnnotation } from "../lib/context/annotationContext";
+import { Slider } from "./ui/slider";
 
 const AnnotationDetails: React.FC = () => {
-  const { rectangles, setRectangles, selectedRect, setSelectedRect } =
-    useAnnotation();
+  const {
+    image,
+    rectangles,
+    setRectangles,
+    selectedRect,
+    setSelectedRect,
+    imageTransform,
+    setImageTransform,
+  } = useAnnotation();
+
   const [editingIndex, setEditingIndex] = useState<number | null>(null);
   const [editingName, setEditingName] = useState("");
   const [isCollapsed, setIsCollapsed] = useState(false);
@@ -33,6 +42,14 @@ const AnnotationDetails: React.FC = () => {
       setEditingIndex(null);
     }
   };
+
+  const handleTransformChange =
+    (property: "rotation" | "tilt") => (value: number[]) => {
+      setImageTransform((prev) => ({
+        ...prev,
+        [property]: value[0],
+      }));
+    };
 
   const renderRectangleCard = (rect: any, index: number) => {
     const isSelected = selectedRect === index;
@@ -112,6 +129,29 @@ const AnnotationDetails: React.FC = () => {
     </div>
   );
 
+  const renderSlider = (
+    label: string,
+    value: number,
+    onChange: (value: number[]) => void,
+    min: number,
+    max: number
+  ) => (
+    <div className="mb-4">
+      <div className="flex justify-between items-center mb-2">
+        <h4 className="text-sm font-medium">{label}</h4>
+        <span className="text-sm font-medium">{value}°</span>
+      </div>
+      <Slider
+        value={[value]}
+        onValueChange={onChange}
+        min={min}
+        max={max}
+        step={1}
+        className="w-full"
+      />
+    </div>
+  );
+
   const toggleCollapse = () => {
     setIsCollapsed(!isCollapsed);
   };
@@ -123,7 +163,7 @@ const AnnotationDetails: React.FC = () => {
       }`}
     >
       <div
-        className={`absolute right-0 top-0 bottom-0 bg-white transition-all duration-300 ease-in-out ${
+        className={`absolute right-0 top-0 bottom-0 bg-white shadow-lg transition-all duration-300 ease-in-out ${
           isCollapsed ? "w-16" : "w-72"
         }`}
       >
@@ -137,10 +177,10 @@ const AnnotationDetails: React.FC = () => {
             <ChevronLeft className="h-6 w-6" />
           </Button>
         ) : (
-          <Card className="h-full rounded-none">
-            <CardContent className="p-4 h-full flex flex-col">
-              <div className="flex justify-between items-center mb-4">
-                <h3 className="text-lg font-semibold">Rectangles</h3>
+          <div className="h-full flex flex-col">
+            <div className="p-4 border-b">
+              <div className="flex justify-between items-center">
+                <h3 className="text-lg font-semibold">Annotations</h3>
                 <Button
                   variant="outline"
                   size="icon"
@@ -150,11 +190,31 @@ const AnnotationDetails: React.FC = () => {
                   <ChevronRight className="h-4 w-4" />
                 </Button>
               </div>
-              <ScrollArea className="flex-grow">
-                {rectangles.map(renderRectangleCard)}
-              </ScrollArea>
-            </CardContent>
-          </Card>
+            </div>
+
+            {image && (
+              <div className="p-4 border-b">
+                {renderSlider(
+                  "Rotation",
+                  imageTransform.rotation,
+                  handleTransformChange("rotation"),
+                  0,
+                  360
+                )}
+                {renderSlider(
+                  "Tilt",
+                  imageTransform.tilt,
+                  handleTransformChange("tilt"),
+                  -45,
+                  45
+                )}
+              </div>
+            )}
+
+            <ScrollArea className="flex-grow p-4">
+              {rectangles.map(renderRectangleCard)}
+            </ScrollArea>
+          </div>
         )}
       </div>
     </div>
