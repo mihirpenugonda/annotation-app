@@ -2,8 +2,6 @@ import React, { useState, useRef, useCallback, useEffect } from "react";
 import { useAnnotation } from "../lib/context/annotationContext";
 import { AnnotationMode, InteractionState, Rectangle } from "../lib/types";
 import { isPointInRect, resizeHandleStyle, rotateHandleStyle } from "../lib/ui";
-import { Card, CardContent } from "./ui/card";
-import { Minus, Plus } from "lucide-react";
 import { ViewportScaleContainer } from "./viewportScaleController";
 
 interface ImageAnnotationToolProps {}
