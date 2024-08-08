@@ -4,6 +4,7 @@ import { AnnotationMode, InteractionState, Rectangle } from "../lib/types";
 import { isPointInRect, resizeHandleStyle, rotateHandleStyle } from "../lib/ui";
 import { Card, CardContent } from "./ui/card";
 import { Minus, Plus } from "lucide-react";
+import { ViewportScaleContainer } from "./viewportScaleController";
 
 interface ImageAnnotationToolProps {}
 
@@ -18,7 +19,7 @@ const ImageAnnotationTool: React.FC<ImageAnnotationToolProps> = () => {
     imageTransform,
     viewport,
     setViewport,
-    setAnnotationMode
+    setAnnotationMode,
   } = useAnnotation();
 
   const [interactionState, setInteractionState] = useState<InteractionState>(
@@ -29,9 +30,11 @@ const ImageAnnotationTool: React.FC<ImageAnnotationToolProps> = () => {
   const [startPoint, setStartPoint] = useState<{ x: number; y: number } | null>(
     null
   );
-
-  const [isDragging, setIsDragging] = useState(false);
-  const [dragStart, setDragStart] = useState({ x: 0, y: 0 });
+  const [dragState, setDragState] = useState({
+    isDragging: false,
+    startX: 0,
+    startY: 0,
+  });
 
   const containerRef = useRef<HTMLDivElement>(null);
 
@@ -113,8 +116,11 @@ const ImageAnnotationTool: React.FC<ImageAnnotationToolProps> = () => {
       } else {
         setSelectedRect(null);
 
-        setIsDragging(true);
-        setDragStart({ x: e.clientX, y: e.clientY });
+        setDragState({
+          isDragging: true,
+          startX: e.clientX,
+          startY: e.clientY,
+        });
       }
     }
   };
@@ -123,14 +129,18 @@ const ImageAnnotationTool: React.FC<ImageAnnotationToolProps> = () => {
     (e: React.MouseEvent<HTMLDivElement>) => {
       if (!containerRef.current) return;
 
-      if (isDragging) {
+      if (dragState.isDragging) {
         setViewport((prev) => ({
           ...prev,
-          x: prev.x + (e.clientX - dragStart.x) / prev.scale,
-          y: prev.y + (e.clientY - dragStart.y) / prev.scale,
+          x: prev.x + (e.clientX - dragState.startX) / prev.scale,
+          y: prev.y + (e.clientY - dragState.startY) / prev.scale,
         }));
 
-        setDragStart({ x: e.clientX, y: e.clientY });
+        setDragState({
+          ...dragState,
+          startX: e.clientX,
+          startY: e.clientY,
+        });
       }
 
       const rect = containerRef.current.getBoundingClientRect();
@@ -272,8 +282,7 @@ const ImageAnnotationTool: React.FC<ImageAnnotationToolProps> = () => {
       startPoint,
       resizeHandle,
       image,
-      isDragging,
-      dragStart,
+      dragState,
       viewport,
     ]
   );
@@ -308,7 +317,12 @@ const ImageAnnotationTool: React.FC<ImageAnnotationToolProps> = () => {
     setInteractionState(InteractionState.None);
     setResizeHandle(null);
     setStartPoint(null);
-    setIsDragging(false);
+
+    setDragState({
+      isDragging: false,
+      startX: 0,
+      startY: 0,
+    });
   };
 
   const handleResizeStart = (e: React.MouseEvent, handle: string) => {
@@ -345,41 +359,7 @@ const ImageAnnotationTool: React.FC<ImageAnnotationToolProps> = () => {
       onMouseUp={handleMouseUp}
       onWheel={handleWheel}
     >
-      <div className="absolute bottom-5 left-5 z-10">
-        <Card>
-          <CardContent className="p-2">
-            <div className="flex flex-row items-center gap-2">
-              <div>
-                <Minus
-                  onClick={() => {
-                    setViewport((prev) => ({
-                      ...prev,
-                      scale: prev.scale - 0.01,
-                    }));
-                  }}
-                  className="w-4 h-4 text-muted-foreground cursor-pointer"
-                />
-              </div>
-              <div>
-                <span className="">{`${Math.round(
-                  viewport.scale * 100
-                )}%`}</span>
-              </div>
-              <div>
-                <Plus
-                  onClick={() => {
-                    setViewport((prev) => ({
-                      ...prev,
-                      scale: prev.scale + 0.01,
-                    }));
-                  }}
-                  className="w-4 h-4 text-muted-foreground cursor-pointer"
-                />
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-      </div>
+      <ViewportScaleContainer />
 
       <div
         style={{

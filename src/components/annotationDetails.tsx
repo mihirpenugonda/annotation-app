@@ -224,7 +224,7 @@ const AnnotationDetails: React.FC = () => {
                     <div key={template.id} className="mb-2 p-2 border rounded">
                       <div className="flex justify-between items-center">
                         <span className="font-medium">{template.name}</span>
-                        <div>
+                        <div className="flex flex-row justify-center items-center">
                           <Button
                             variant="outline"
                             size="sm"
