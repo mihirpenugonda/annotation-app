@@ -308,18 +308,29 @@ const ImageAnnotationTool: React.FC<ImageAnnotationToolProps> = () => {
     setStartPoint(null);
     setIsDragging(false);
   };
-
   const handleResizeStart = (e: React.MouseEvent, handle: string) => {
     e.stopPropagation();
     setInteractionState(InteractionState.Resizing);
     setResizeHandle(handle);
-    setStartPoint({ x: e.clientX, y: e.clientY });
+
+    if (containerRef.current) {
+      const rect = containerRef.current.getBoundingClientRect();
+      const x = (e.clientX - rect.left) / viewport.scale - viewport.x;
+      const y = (e.clientY - rect.top) / viewport.scale - viewport.y;
+      setStartPoint({ x, y });
+    }
   };
 
   const handleRotateStart = (e: React.MouseEvent) => {
     e.stopPropagation();
     setInteractionState(InteractionState.Rotating);
-    setStartPoint({ x: e.clientX, y: e.clientY });
+    
+    if (containerRef.current) {
+      const rect = containerRef.current.getBoundingClientRect();
+      const x = (e.clientX - rect.left) / viewport.scale - viewport.x;
+      const y = (e.clientY - rect.top) / viewport.scale - viewport.y;
+      setStartPoint({ x, y });
+    }
   };
 
   return (
