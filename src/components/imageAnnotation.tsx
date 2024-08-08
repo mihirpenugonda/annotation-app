@@ -1,6 +1,11 @@
 import React, { useState, useRef, useCallback } from "react";
 import { useAnnotation } from "../lib/context/annotationContext";
-import { AnnotationMode, InteractionState, Rectangle, Viewport } from "../lib/types";
+import {
+  AnnotationMode,
+  InteractionState,
+  Rectangle,
+  Viewport,
+} from "../lib/types";
 import { isPointInRect, resizeHandleStyle, rotateHandleStyle } from "../lib/ui";
 import { Card, CardContent } from "./ui/card";
 import { Minus, Plus } from "lucide-react";
@@ -83,10 +88,8 @@ const ImageAnnotationTool: React.FC<ImageAnnotationToolProps> = () => {
     if (!containerRef.current) return;
 
     const rect = containerRef.current.getBoundingClientRect();
-    const x = e.clientX - rect.left;
-    const y = e.clientY - rect.top;
-
-    console.log(x, y);
+    const x = (e.clientX - rect.left) / viewport.scale - viewport.x;
+    const y = (e.clientY - rect.top) / viewport.scale - viewport.y;
 
     if (annotationMode === AnnotationMode.Rectangle) {
       setStartPoint({ x, y });
@@ -132,8 +135,8 @@ const ImageAnnotationTool: React.FC<ImageAnnotationToolProps> = () => {
       }
 
       const rect = containerRef.current.getBoundingClientRect();
-      const x = e.clientX - rect.left;
-      const y = e.clientY - rect.top;
+      const x = (e.clientX - rect.left) / viewport.scale - viewport.x;
+      const y = (e.clientY - rect.top) / viewport.scale - viewport.y;
 
       const handleDrawing = (r: Rectangle, x: number, y: number) => {
         if (startPoint) {
@@ -152,8 +155,8 @@ const ImageAnnotationTool: React.FC<ImageAnnotationToolProps> = () => {
             newY = r.y,
             newWidth = r.width,
             newHeight = r.height;
-          const dx = x - startPoint.x;
-          const dy = y - startPoint.y;
+          const dx = (x - startPoint.x) / viewport.scale;
+          const dy = (y - startPoint.y) / viewport.scale;
 
           switch (resizeHandle) {
             case "n":
@@ -208,8 +211,8 @@ const ImageAnnotationTool: React.FC<ImageAnnotationToolProps> = () => {
 
       const handleDragging = (r: Rectangle, x: number, y: number) => {
         if (startPoint) {
-          const dx = x - startPoint.x;
-          const dy = y - startPoint.y;
+          const dx = (x - startPoint.x) / viewport.scale;
+          const dy = (y - startPoint.y) / viewport.scale;
           return { ...r, x: r.x + dx, y: r.y + dy };
         }
         return r;
@@ -220,10 +223,13 @@ const ImageAnnotationTool: React.FC<ImageAnnotationToolProps> = () => {
           const centerX = r.x + r.width / 2;
           const centerY = r.y + r.height / 2;
           const startAngle = Math.atan2(
-            startPoint.y - centerY,
-            startPoint.x - centerX
+            (startPoint.y - centerY) * viewport.scale,
+            (startPoint.x - centerX) * viewport.scale
           );
-          const currentAngle = Math.atan2(y - centerY, x - centerX);
+          const currentAngle = Math.atan2(
+            (y - centerY) * viewport.scale,
+            (x - centerX) * viewport.scale
+          );
           const angleDiff = currentAngle - startAngle;
           const rotationDiff = angleDiff * (180 / Math.PI);
           const dampingFactor = 0.91;
@@ -269,6 +275,7 @@ const ImageAnnotationTool: React.FC<ImageAnnotationToolProps> = () => {
       image,
       isDragging,
       dragStart,
+      viewport,
     ]
   );
 
