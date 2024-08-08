@@ -1,7 +1,6 @@
 import React, { useState, useEffect, useCallback } from "react";
 import {
   Trash2,
-  Edit2,
   ChevronRight,
   ChevronLeft,
   Save,
