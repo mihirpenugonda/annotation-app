@@ -28,3 +28,17 @@ export interface Template {
   rectangles: RelativeRectangle[];
   originalImageSize: { width: number; height: number };
 }
+
+export enum InteractionState {
+  None,
+  Drawing,
+  Resizing,
+  Dragging,
+  Rotating,
+}
+
+export interface Viewport {
+  x: number;
+  y: number;
+  scale: number;
+}
