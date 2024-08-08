@@ -1,4 +1,4 @@
-import React, { useState, useRef, useCallback } from "react";
+import React, { useState, useRef, useCallback, useEffect } from "react";
 import { useAnnotation } from "../lib/context/annotationContext";
 import {
   AnnotationMode,
@@ -77,12 +77,19 @@ const ImageAnnotationTool: React.FC<ImageAnnotationToolProps> = () => {
     [selectedRect]
   );
 
-  React.useEffect(() => {
+  useEffect(() => {
     window.addEventListener("keydown", handleKeyDown);
     return () => {
       window.removeEventListener("keydown", handleKeyDown);
     };
   }, [handleKeyDown]);
+
+  useEffect(() => {
+    const stopScroll = (e: WheelEvent) => e.preventDefault();
+
+    containerRef.current?.addEventListener("wheel", stopScroll);
+    return () => containerRef.current?.removeEventListener("wheel", stopScroll);
+  }, []);
 
   const handleMouseDown = (e: React.MouseEvent<HTMLDivElement>) => {
     if (!containerRef.current) return;
@@ -282,6 +289,8 @@ const ImageAnnotationTool: React.FC<ImageAnnotationToolProps> = () => {
   const handleWheel = useCallback(
     (e: React.WheelEvent) => {
       e.preventDefault();
+      e.stopPropagation();
+
       const scaleFactor = 1 - e.deltaY * 0.003; // Increased scaling factor for faster zoom
       const newScale = Math.max(
         0.1,
@@ -324,7 +333,7 @@ const ImageAnnotationTool: React.FC<ImageAnnotationToolProps> = () => {
   const handleRotateStart = (e: React.MouseEvent) => {
     e.stopPropagation();
     setInteractionState(InteractionState.Rotating);
-    
+
     if (containerRef.current) {
       const rect = containerRef.current.getBoundingClientRect();
       const x = (e.clientX - rect.left) / viewport.scale - viewport.x;
