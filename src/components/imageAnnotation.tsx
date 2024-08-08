@@ -84,44 +84,58 @@ const ImageAnnotationTool: React.FC<ImageAnnotationToolProps> = () => {
     return () => containerRef.current?.removeEventListener("wheel", stopScroll);
   }, []);
 
-  const handleMouseDown = (e: React.MouseEvent<HTMLDivElement>) => {
-    if (!containerRef.current) return;
+  const handleMouseDown = useCallback(
+    (e: React.MouseEvent<HTMLDivElement>) => {
+      if (!containerRef.current) return;
 
-    const rect = containerRef.current.getBoundingClientRect();
-    const x = (e.clientX - rect.left) / viewport.scale - viewport.x;
-    const y = (e.clientY - rect.top) / viewport.scale - viewport.y;
+      const rect = containerRef.current.getBoundingClientRect();
+      const x = (e.clientX - rect.left) / viewport.scale - viewport.x;
+      const y = (e.clientY - rect.top) / viewport.scale - viewport.y;
 
-    if (annotationMode === AnnotationMode.Rectangle) {
-      setStartPoint({ x, y });
-      const newRect: Rectangle = {
-        x,
-        y,
-        width: 0,
-        height: 0,
-        color: "#ff0000",
-        rotation: 0,
-      };
-      setRectangles([...rectangles, newRect]);
-      setSelectedRect(rectangles.length);
-      setInteractionState(InteractionState.Drawing);
-    } else {
-      const clickedRect = rectangles.findIndex((r) => isPointInRect(x, y, r));
-
-      if (clickedRect !== -1) {
-        setSelectedRect(clickedRect);
-        setInteractionState(InteractionState.Dragging);
+      if (annotationMode === AnnotationMode.Rectangle) {
         setStartPoint({ x, y });
+        const newRect: Rectangle = {
+          x,
+          y,
+          width: 0,
+          height: 0,
+          color: "#ff0000",
+          rotation: 0,
+        };
+        setRectangles([...rectangles, newRect]);
+        setSelectedRect(rectangles.length);
+        setInteractionState(InteractionState.Drawing);
       } else {
-        setSelectedRect(null);
+        const clickedRect = rectangles.findIndex((r) => isPointInRect(x, y, r));
 
-        setDragState({
-          isDragging: true,
-          startX: e.clientX,
-          startY: e.clientY,
-        });
+        if (clickedRect !== -1) {
+          setSelectedRect(clickedRect);
+          setInteractionState(InteractionState.Dragging);
+          setStartPoint({ x, y });
+        } else {
+          setSelectedRect(null);
+
+          setDragState({
+            isDragging: true,
+            startX: e.clientX,
+            startY: e.clientY,
+          });
+        }
       }
-    }
-  };
+    },
+    [
+      annotationMode,
+      containerRef,
+      viewport,
+      rectangles,
+      setStartPoint,
+      setRectangles,
+      setSelectedRect,
+      setInteractionState,
+      setDragState,
+      isPointInRect,
+    ]
+  );
 
   const handleMouseMove = useCallback(
     (e: React.MouseEvent<HTMLDivElement>) => {
@@ -310,7 +324,7 @@ const ImageAnnotationTool: React.FC<ImageAnnotationToolProps> = () => {
     [viewport]
   );
 
-  const handleMouseUp = () => {
+  const handleMouseUp = useCallback(() => {
     setAnnotationMode(AnnotationMode.None);
     setInteractionState(InteractionState.None);
     setResizeHandle(null);
@@ -321,7 +335,13 @@ const ImageAnnotationTool: React.FC<ImageAnnotationToolProps> = () => {
       startX: 0,
       startY: 0,
     });
-  };
+  }, [
+    setAnnotationMode,
+    setInteractionState,
+    setResizeHandle,
+    setStartPoint,
+    setDragState,
+  ]);
 
   const handleResizeStart = (e: React.MouseEvent, handle: string) => {
     e.stopPropagation();
