@@ -1,5 +1,7 @@
 import { Template } from "../lib/types";
 
+// adding a delay to simulate a real API call
+
 export const fetchTemplates = async (): Promise<Template[]> => {
   return new Promise((resolve) => {
     setTimeout(() => {
