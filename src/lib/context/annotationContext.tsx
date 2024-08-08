@@ -10,6 +10,7 @@ import {
   Rectangle,
   RelativeRectangle,
   Template,
+  Viewport,
 } from "../types";
 import {
   deleteTemplateFromStorage,
@@ -32,6 +33,9 @@ interface AnnotationContextType {
 
   imageTransform: ImageTransform;
   setImageTransform: React.Dispatch<React.SetStateAction<ImageTransform>>;
+
+  viewport: Viewport;
+  setViewport: React.Dispatch<React.SetStateAction<Viewport>>;
 
   templates: Template[];
   setTemplates: React.Dispatch<React.SetStateAction<Template[]>>;
@@ -83,6 +87,12 @@ export const AnnotationProvider: React.FC<AnnotationProviderProps> = ({
 
   const [templates, setTemplates] = useState<Template[]>([]);
   const [unsavedChanges, setUnsavedChanges] = useState(false);
+
+  const [viewport, setViewport] = useState<Viewport>({
+    x: 0,
+    y: 0,
+    scale: 0.5,
+  });
 
   const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -169,6 +179,8 @@ export const AnnotationProvider: React.FC<AnnotationProviderProps> = ({
         setImageTransform,
         templates,
         setTemplates,
+        viewport,
+        setViewport,
         saveTemplate,
         loadTemplate,
         deleteTemplate,

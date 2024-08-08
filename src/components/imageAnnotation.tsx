@@ -1,11 +1,6 @@
 import React, { useState, useRef, useCallback, useEffect } from "react";
 import { useAnnotation } from "../lib/context/annotationContext";
-import {
-  AnnotationMode,
-  InteractionState,
-  Rectangle,
-  Viewport,
-} from "../lib/types";
+import { AnnotationMode, InteractionState, Rectangle } from "../lib/types";
 import { isPointInRect, resizeHandleStyle, rotateHandleStyle } from "../lib/ui";
 import { Card, CardContent } from "./ui/card";
 import { Minus, Plus } from "lucide-react";
@@ -21,6 +16,8 @@ const ImageAnnotationTool: React.FC<ImageAnnotationToolProps> = () => {
     selectedRect,
     setSelectedRect,
     imageTransform,
+    viewport,
+    setViewport,
   } = useAnnotation();
 
   const [interactionState, setInteractionState] = useState<InteractionState>(
@@ -34,12 +31,6 @@ const ImageAnnotationTool: React.FC<ImageAnnotationToolProps> = () => {
 
   const [isDragging, setIsDragging] = useState(false);
   const [dragStart, setDragStart] = useState({ x: 0, y: 0 });
-
-  const [viewport, setViewport] = useState<Viewport>({
-    x: 0,
-    y: 0,
-    scale: 0.5,
-  });
 
   const containerRef = useRef<HTMLDivElement>(null);
 
