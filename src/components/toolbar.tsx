@@ -40,6 +40,8 @@ export const Toolbar = () => {
               annotationContext.handleImageChange(
                 event as unknown as React.ChangeEvent<HTMLInputElement>
               );
+
+              annotationContext.setAnnotationMode(AnnotationMode.None);
             };
             fileInput.click();
           }}

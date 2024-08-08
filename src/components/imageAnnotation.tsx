@@ -18,6 +18,7 @@ const ImageAnnotationTool: React.FC<ImageAnnotationToolProps> = () => {
     imageTransform,
     viewport,
     setViewport,
+    setAnnotationMode
   } = useAnnotation();
 
   const [interactionState, setInteractionState] = useState<InteractionState>(
@@ -303,11 +304,13 @@ const ImageAnnotationTool: React.FC<ImageAnnotationToolProps> = () => {
   );
 
   const handleMouseUp = () => {
+    setAnnotationMode(AnnotationMode.None);
     setInteractionState(InteractionState.None);
     setResizeHandle(null);
     setStartPoint(null);
     setIsDragging(false);
   };
+
   const handleResizeStart = (e: React.MouseEvent, handle: string) => {
     e.stopPropagation();
     setInteractionState(InteractionState.Resizing);
