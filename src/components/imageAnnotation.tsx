@@ -74,11 +74,13 @@ const ImageAnnotationTool: React.FC<ImageAnnotationToolProps> = () => {
   }, [handleKeyDown]);
 
   const handleMouseDown = (e: React.MouseEvent<HTMLDivElement>) => {
-    if (!containerRef.current || !image) return;
+    if (!containerRef.current) return;
 
     const rect = containerRef.current.getBoundingClientRect();
     const x = e.clientX - rect.left;
     const y = e.clientY - rect.top;
+
+    console.log(x, y);
 
     if (annotationMode === AnnotationMode.Rectangle) {
       setStartPoint({ x, y });
@@ -107,7 +109,7 @@ const ImageAnnotationTool: React.FC<ImageAnnotationToolProps> = () => {
 
   const handleMouseMove = useCallback(
     (e: React.MouseEvent<HTMLDivElement>) => {
-      if (!containerRef.current || !image) return;
+      if (!containerRef.current) return;
 
       const rect = containerRef.current.getBoundingClientRect();
       const x = e.clientX - rect.left;
